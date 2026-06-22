@@ -239,4 +239,95 @@ struct
 
   fun legendre (a, p) = jacobi (a, p)
 
+  (* ---- Tonelli-Shanks: a square root of n modulo an odd prime p ---- *)
+
+  fun tonelliShanks (n, p) =
+    let
+      val a = bmod (n, p)
+    in
+      if isZero a then SOME zero
+      else
+        let
+          val pm1 = B.sub (p, one)
+          (* Euler's criterion: a^((p-1)/2) is 1 for a residue, p-1 (= ~1) for
+             a non-residue *)
+          val euler = B.modpow (a, bdiv (pm1, two), p)
+        in
+          if beq (euler, pm1) then NONE
+          else
+            let
+              (* p - 1 = q * 2^s with q odd *)
+              fun split (q, s) =
+                if isEven q then split (bdiv (q, two), B.add (s, one))
+                else (q, s)
+              val (q, s) = split (pm1, zero)
+              (* smallest quadratic non-residue z (a witness for the 2-part) *)
+              fun findZ z =
+                if beq (B.modpow (z, bdiv (pm1, two), p), pm1) then z
+                else findZ (B.add (z, one))
+              val z = findZ two
+              (* least i, 1 <= i < M, with t^(2^i) = 1; tt = t^(2^i) so far *)
+              fun lowestOrder (tt, i) =
+                if beq (tt, one) then i
+                else lowestOrder (bmod (B.mul (tt, tt), p), B.add (i, one))
+              fun loop (m, c, t, r) =
+                if beq (t, one) then r
+                else
+                  let
+                    val i  = lowestOrder (bmod (B.mul (t, t), p), one)
+                    val b  = B.modpow (c, B.pow (two, B.sub (B.sub (m, i), one)), p)
+                    val b2 = bmod (B.mul (b, b), p)
+                  in
+                    loop (i, b2, bmod (B.mul (t, b2), p), bmod (B.mul (r, b), p))
+                  end
+              val r0 = B.modpow (a, bdiv (B.add (q, one), two), p)
+              val r  = loop (s, B.modpow (z, q, p), B.modpow (a, q, p), r0)
+              (* canonicalize to the smaller of the two roots r and p - r *)
+              val r' = B.sub (p, r)
+            in
+              SOME (if B.compare (r, r') = GREATER then r' else r)
+            end
+        end
+    end
+
+  (* ---- smallest primitive root modulo p ---- *)
+
+  (* drop adjacent duplicates of an already-sorted list *)
+  fun dedup [] = []
+    | dedup [x] = [x]
+    | dedup (x :: (rest as (y :: _))) =
+        if beq (x, y) then dedup rest else x :: dedup rest
+
+  fun primitiveRoot p =
+    if B.compare (p, one) = LESS then raise Domain
+    else if beq (p, one) then SOME one
+    else
+      let
+        val phi = eulerPhi p
+        val qs  = dedup (factor phi)            (* distinct primes dividing phi *)
+        fun isGen g =
+          beq (B.gcd (g, p), one)
+          andalso
+          List.all (fn q => not (beq (B.modpow (g, bdiv (phi, q), p), one))) qs
+        fun search g =
+          if B.compare (g, p) <> LESS then NONE  (* exhausted [1, p) *)
+          else if isGen g then SOME g
+          else search (B.add (g, one))
+      in
+        search one
+      end
+
+  (* ---- Moebius function from the prime factorization ---- *)
+
+  fun moebius n =
+    let
+      fun go ([], _, sgn) = sgn
+        | go (p :: ps, prev, sgn) =
+            if (case prev of SOME q => beq (p, q) | NONE => false)
+            then 0                              (* a repeated prime: not square-free *)
+            else go (ps, SOME p, ~sgn)
+    in
+      go (factor n, NONE, 1)
+    end
+
 end

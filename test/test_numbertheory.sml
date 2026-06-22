@@ -256,12 +256,96 @@ struct
     ; Harness.checkRaises "jacobi even modulus raises"
         (fn () => NT.jacobi (b 3, b 8)) )
 
+  (* ---- tonelliShanks ---- *)
+
+  fun checkSqrt name (expected, (a, p)) =
+    Harness.checkString name
+      ( expected
+      , case NT.tonelliShanks (b a, b p) of SOME r => str r | NONE => "NONE" )
+
+  fun checkSqrtNone name (a, p) =
+    Harness.check name
+      (case NT.tonelliShanks (b a, b p) of NONE => true | _ => false)
+
+  (* for SOME r, r is the smaller root and r*r = a (mod p) *)
+  fun checkSqrtRoundtrip name (a, p) =
+    case NT.tonelliShanks (b a, b p) of
+        NONE => Harness.check (name ^ " (NONE)") false
+      | SOME r =>
+          let
+            val pp = b p
+            val sq = bmod (B.mul (r, r), pp)
+          in
+            Harness.check name
+              ( beq (sq, bmod (b a, pp))                       (* r*r = a (mod p) *)
+                andalso B.compare (r, zero) <> LESS            (* 0 <= r *)
+                andalso B.compare (r, pp) = LESS               (* r < p *)
+                andalso B.compare (r, B.sub (pp, r)) <> GREATER (* smaller root *) )
+          end
+
+  fun tonelliTests () =
+    ( Harness.section "tonelliShanks (modular square root)"
+    ; checkSqrt "sqrt(10) mod 13 = 6"     ("6", (10, 13))
+    ; checkSqrt "sqrt(0) mod 7 = 0"       ("0", (0, 7))
+    ; checkSqrt "sqrt(5) mod 41 = 13"     ("13", (5, 41))   (* smaller of {13,28} *)
+    ; checkSqrtNone "sqrt(2) mod 5 = NONE" (2, 5)
+    ; checkSqrtNone "sqrt(3) mod 7 = NONE" (3, 7)
+    ; checkSqrtNone "sqrt(2) mod 3 = NONE" (2, 3)
+    (* every returned root squares back to the input and is the canonical one *)
+    ; checkSqrtRoundtrip "roundtrip 10 mod 13" (10, 13)
+    ; checkSqrtRoundtrip "roundtrip 5 mod 41"  (5, 41)
+    ; checkSqrtRoundtrip "roundtrip 0 mod 7"   (0, 7)
+    ; checkSqrtRoundtrip "roundtrip 2 mod 7"   (2, 7)
+    ; checkSqrtRoundtrip "roundtrip 1 mod 7"   (1, 7)
+    ; checkSqrtRoundtrip "roundtrip 4 mod 7"   (4, 7)
+    ; checkSqrtRoundtrip "roundtrip 9 mod 23"  (9, 23)
+    ; checkSqrtRoundtrip "roundtrip 10 mod 997 (p=1 mod 4)" (10, 997) )
+
+  (* ---- primitiveRoot ---- *)
+
+  fun checkRoot name (expected, p) =
+    Harness.checkString name
+      ( expected
+      , case NT.primitiveRoot (b p) of SOME g => str g | NONE => "NONE" )
+
+  fun primitiveRootTests () =
+    ( Harness.section "primitiveRoot (smallest generator)"
+    ; checkRoot "primitiveRoot 3 = 2"  ("2", 3)
+    ; checkRoot "primitiveRoot 5 = 2"  ("2", 5)
+    ; checkRoot "primitiveRoot 7 = 3"  ("3", 7)
+    ; checkRoot "primitiveRoot 11 = 2" ("2", 11)
+    ; checkRoot "primitiveRoot 13 = 2" ("2", 13)
+    ; checkRoot "primitiveRoot 23 = 5" ("5", 23) )
+
+  (* ---- moebius ---- *)
+
+  fun checkMu name (expected, n) =
+    Harness.checkInt name (expected, NT.moebius (b n))
+
+  fun moebiusTests () =
+    ( Harness.section "moebius (mu)"
+    ; checkMu "mu(1) = 1"   (1,  1)
+    ; checkMu "mu(2) = ~1"  (~1, 2)
+    ; checkMu "mu(3) = ~1"  (~1, 3)
+    ; checkMu "mu(4) = 0"   (0,  4)
+    ; checkMu "mu(6) = 1"   (1,  6)
+    ; checkMu "mu(7) = ~1"  (~1, 7)
+    ; checkMu "mu(12) = 0"  (0,  12)
+    ; checkMu "mu(15) = 1"  (1,  15)
+    ; checkMu "mu(30) = ~1" (~1, 30)
+    ; checkMu "mu(49) = 0"  (0,  49)
+    ; Harness.checkRaises "moebius 0 raises" (fn () => NT.moebius zero)
+    ; Harness.checkRaises "moebius ~6 raises" (fn () => NT.moebius (b ~6)) )
+
   fun run () =
     ( sieveTests ()
     ; factorTests ()
     ; modInverseTests ()
     ; crtTests ()
     ; eulerPhiTests ()
-    ; jacobiTests () )
+    ; jacobiTests ()
+    ; tonelliTests ()
+    ; primitiveRootTests ()
+    ; moebiusTests () )
 
 end

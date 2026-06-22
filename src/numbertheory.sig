@@ -62,4 +62,28 @@ sig
      such; the caller is responsible for p being an odd prime (the value is
      only meaningful then).  Raises [Domain] when p is even or p < 1. *)
   val legendre : BigInt.int * BigInt.int -> int
+
+  (* [tonelliShanks (n, p)] is SOME r with 0 <= r < p and r*r = n (mod p) -- a
+     modular square root of n mod the odd prime p -- or NONE when n is a
+     quadratic non-residue mod p.  When n = 0 (mod p) the root is 0.  Of the
+     two roots r and p-r the smaller is returned, so the result is
+     deterministic.  The caller is responsible for p being an odd prime (the
+     value is only meaningful then); it is computed by the Tonelli-Shanks
+     algorithm. *)
+  val tonelliShanks : BigInt.int * BigInt.int -> BigInt.int option
+
+  (* [primitiveRoot p] is SOME g, the smallest primitive root modulo p -- a
+     generator of the multiplicative group of units mod p -- or NONE when no
+     primitive root exists.  It is intended for a prime modulus p, where a
+     primitive root always exists; more generally it returns the least g
+     coprime to p whose multiplicative order equals eulerPhi p, scanning
+     g = 1, 2, ... and so reporting NONE only after exhausting [1, p).  Raises
+     [Domain] for p < 1. *)
+  val primitiveRoot : BigInt.int -> BigInt.int option
+
+  (* [moebius n] is the Moebius function mu(n) for n >= 1: 1 when n is
+     square-free with an even number of prime factors, ~1 when square-free with
+     an odd number, and 0 when n is divisible by a square > 1.  [moebius 1] is
+     1.  Computed from the prime factorization.  Raises [Domain] for n <= 0. *)
+  val moebius : BigInt.int -> int
 end

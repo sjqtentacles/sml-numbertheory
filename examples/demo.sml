@@ -59,3 +59,21 @@ fun legRow () =
     String.concatWith " " (List.map one [1,2,3,4,5,6,7,8,9,10])
   end
 val () = line ("(a/11), a=1..10 : " ^ legRow ())
+val () = line ""
+
+(* --- modular square root via Tonelli-Shanks --- *)
+val () = line ("sqrt(10) mod 13 = " ^
+               (case NT.tonelliShanks (B.fromInt 10, B.fromInt 13) of
+                    SOME r => B.toString r | NONE => "none")
+               ^ "   (6*6 = 36 = 10 mod 13)")
+
+(* --- smallest primitive root mod 23 --- *)
+val () = line ("primitiveRoot 23 = " ^
+               (case NT.primitiveRoot (B.fromInt 23) of
+                    SOME g => B.toString g | NONE => "none"))
+
+(* --- Moebius function mu(n) for n = 1..10 --- *)
+fun muRow () =
+  let fun one n = Int.toString (NT.moebius (B.fromInt n))
+  in String.concatWith " " (List.map one [1,2,3,4,5,6,7,8,9,10]) end
+val () = line ("mu(n), n=1..10  : " ^ muRow ())
