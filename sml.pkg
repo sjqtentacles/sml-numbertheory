@@ -1,0 +1,5 @@
+package github.com/sjqtentacles/sml-numbertheory
+
+require {
+  github.com/sjqtentacles/sml-bigint
+}

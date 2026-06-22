@@ -1,0 +1,8 @@
+(* Test executable basis: the numbertheory library (which pulls in the vendored
+ * sml-bigint) plus the harness and runner. *)
+$(SML_LIB)/basis/basis.mlb
+../src/numbertheory.mlb
+harness.sml
+test_numbertheory.sml
+entry.sml
+main.sml
